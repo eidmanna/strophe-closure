@@ -603,7 +603,8 @@ Strophe = {
             }
         }
 
-        return Strophe.xmlescape(str);
+        // Don't do XML escaping here, because will do HTML escaping later.
+        return str;
     },
 
     /** Function: copyElement
@@ -2828,7 +2829,8 @@ Strophe.Connection.prototype = {
             for (i = 0; i < mechanisms.length; i++) {
                 mech = Strophe.getText(mechanisms[i]);
                 if (mech == 'SCRAM-SHA-1') {
-                    this._authentication.sasl_scram_sha1 = true;
+                    // IE8 and below can't math.
+                    this._authentication.sasl_scram_sha1 = false;
                 } else if (mech == 'DIGEST-MD5') {
                     this._authentication.sasl_digest_md5 = true;
                 } else if (mech == 'PLAIN') {
