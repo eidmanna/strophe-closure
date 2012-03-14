@@ -2403,9 +2403,20 @@ Strophe.Connection.prototype = {
 
             // Fires the XHR request -- may be invoked immediately
             // or on a gradually expanding retry window for reconnects
-            var sendFunc = function () {
+            var self = this,
+                sendFunc = function () {
                 req.date = new Date();
-                req.xhr.send(req.data);
+                try {
+                    req.xhr.send(req.data);
+                } catch (e2) {
+                    Strophe.error("XHR send failed.");
+                    if (!self.connected) {
+                        self._changeConnectStatus(Strophe.Status.CONNFAIL,
+                                                  "bad-service");
+                    }
+                    self.disconnect();
+                    return;
+                }
             };
 
             // Implement progressive backoff for reconnects --
