@@ -13,6 +13,10 @@ goog.exportProperty(Strophe, 'getDomainFromJid', Strophe.getDomainFromJid);
 goog.exportProperty(Strophe, 'getResourceFromJid', Strophe.getResourceFromJid);
 goog.exportProperty(Strophe, 'getBareJidFromJid', Strophe.getBareJidFromJid);
 
+goog.provide('Strophe.LogLevel');
+goog.exportProperty(Strophe, 'LogLevel', Strophe.LogLevel);
+goog.exportProperty(Strophe.LogLevel, 'WARN', goog.debug.Logger.Level.WARNING);
+
 goog.exportProperty(Strophe, 'NS', Strophe.NS);
 goog.exportProperty(Strophe.NS, 'DISCO_INFO', Strophe.NS.DISCO_INFO);
 goog.exportProperty(Strophe.NS, 'ROSTER', Strophe.NS.ROSTER);
@@ -39,15 +43,16 @@ goog.exportProperty(Strophe.Builder.prototype, 't', Strophe.Builder.prototype.t)
 goog.exportProperty(Strophe.Builder.prototype, 'h', Strophe.Builder.prototype.h);
 
 goog.exportProperty(Strophe, 'Connection', Strophe.Connection);
+goog.exportProperty(Strophe.Connection.prototype, 'addHandler', Strophe.Connection.prototype.addHandler);
+goog.exportProperty(Strophe.Connection.prototype, 'attach', Strophe.Connection.prototype.attach);
+goog.exportProperty(Strophe.Connection.prototype, 'connect', Strophe.Connection.prototype.connect);
+goog.exportProperty(Strophe.Connection.prototype, 'connected', Strophe.Connection.prototype.connected);
 goog.exportProperty(Strophe.Connection.prototype, 'disconnect', Strophe.Connection.prototype.disconnect);
 goog.exportProperty(Strophe.Connection.prototype, 'flush', Strophe.Connection.prototype.flush);
+goog.exportProperty(Strophe.Connection.prototype, 'getUniqueId', Strophe.Connection.prototype.getUniqueId);
+goog.exportProperty(Strophe.Connection.prototype, 'jid', Strophe.Connection.prototype.jid);
 goog.exportProperty(Strophe.Connection.prototype, 'pause', Strophe.Connection.prototype.pause);
 goog.exportProperty(Strophe.Connection.prototype, 'reset', Strophe.Connection.prototype.reset);
 goog.exportProperty(Strophe.Connection.prototype, 'resume', Strophe.Connection.prototype.resume);
-goog.exportProperty(Strophe.Connection.prototype, 'jid', Strophe.Connection.prototype.jid);
-goog.exportProperty(Strophe.Connection.prototype, 'getUniqueId', Strophe.Connection.prototype.getUniqueId);
-goog.exportProperty(Strophe.Connection.prototype, 'addHandler', Strophe.Connection.prototype.addHandler);
-goog.exportProperty(Strophe.Connection.prototype, 'connect', Strophe.Connection.prototype.connect);
-goog.exportProperty(Strophe.Connection.prototype, 'attach', Strophe.Connection.prototype.attach);
 goog.exportProperty(Strophe.Connection.prototype, 'send', Strophe.Connection.prototype.send);
 goog.exportProperty(Strophe.Connection.prototype, 'sendIQ', Strophe.Connection.prototype.sendIQ);

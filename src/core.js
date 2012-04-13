@@ -20,16 +20,18 @@ goog.provide('Strophe.Builder');
 goog.provide('Strophe.Connection');
 goog.provide('Strophe.XHTML');
 
-goog.require('MD5');
-goog.require('SHA1');
-
 goog.require('goog.array');
+goog.require('goog.crypt');
+goog.require('goog.crypt.Hmac');
+goog.require('goog.crypt.Md5');
+goog.require('goog.crypt.Sha1');
 goog.require('goog.crypt.base64');
 goog.require('goog.debug.Logger');
 goog.require('goog.dom');
 goog.require('goog.dom.xml');
 goog.require('goog.net.XhrIo');
 goog.require('goog.net.XmlHttp');
+goog.require('goog.string');
 
 /** @define {boolean} */
 Strophe.ENABLE_DIGEST_MD5  = true;
@@ -2110,7 +2112,7 @@ Strophe.Connection.prototype._processRequest = function (i) {
             sendFunc = function () {
                 req.date = goog.now();
                 try {
-                    req.xhr.send(self.service, 'POST', req.data);
+                    req.xhr.send(self.service, 'POST', req.data, { 'Content-Type': 'text/xml; charset=UTF-8' });
                 } catch (e2) {
                     Strophe.error("XHR send failed.");
                     if (!self.connected) {
@@ -2540,6 +2542,44 @@ Strophe.Connection.prototype._connect_cb = function (req) {
     }
 };
 
+if (Strophe.ENABLE_DIGEST_MD5 || Strophe.ENABLE_SCRAM_SHA_1) {
+    /**
+     * @param {Array.<number>} x
+     */
+    Strophe.md5 = function (x) {
+        var md5 = new goog.crypt.Md5();
+        md5.update(x);
+        return md5.digest();
+    };
+
+    /**
+     * @param {string} s
+     * @return {string}
+     */
+    Strophe.hash = function (s) {
+        return goog.crypt.byteArrayToString(Strophe.md5(goog.crypt.stringToByteArray(s)));
+    };
+
+    /**
+     * @param {Array.<number>} key
+     * @param {Array.<number>} data
+     * @return {Array.<number>}
+     */
+    Strophe.hmac_md5 = function (key, data) {
+        var md5  = new goog.crypt.Md5(),
+            hmac = new goog.crypt.Hmac(md5, key);
+        return hmac.getHmac(data);
+    };
+
+    /**
+     * @param {string} s
+     * @return {string}
+     */
+    Strophe.hexdigest = function (s) {
+        return goog.crypt.byteArrayToHex(Strophe.md5(goog.crypt.stringToByteArray(s)));
+    };
+}
+
 /**
  * Set up authentication
  *
@@ -2571,7 +2611,7 @@ Strophe.Connection.prototype.authenticate = function () {
         this._changeConnectStatus(Strophe.Status.CONNFAIL, 'x-strophe-bad-non-anon-jid');
         this.disconnect();
     } else if (Strophe.ENABLE_SCRAM_SHA_1 && this._authentication.sasl_scram_sha1) {
-        var cnonce = MD5.hexdigest('' + Math.random() * 1234567890);
+        var cnonce = Strophe.hexdigest('' + Math.random() * 1234567890);
 
         var auth_str = "n=" + Strophe.getNodeFromJid(this.jid);
         auth_str += ",r=";
@@ -2654,47 +2694,39 @@ if (Strophe.ENABLE_DIGEST_MD5) {
      *    false to remove the handler.
      */
     Strophe.Connection.prototype._sasl_digest_challenge1_cb = function (elem) {
-        var attribMatch = /([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)/;
-
-        var challenge = goog.crypt.base64.decodeString(Strophe.getText(elem));
-        var cnonce = MD5.hexdigest("" + (Math.random() * 1234567890));
-        var realm = "";
-        var host = null;
-        var nonce = "";
-        var qop = "";
-        var matches;
+        var challenge = goog.crypt.base64.decodeString(Strophe.getText(elem)),
+            cnonce    = Strophe.hexdigest('' + (Math.random() * 1234567890));
 
         // remove unneeded handlers
         this.deleteHandler(this._sasl_failure_handler);
 
-        while (challenge.match(attribMatch)) {
-            matches = challenge.match(attribMatch);
-            challenge = challenge.replace(matches[0], "");
-            matches[2] = matches[2].replace(/^"(.+)"$/, "$1");
-            switch (matches[1]) {
+        var realm = '', nonce, qop, host;
+        challenge.replace(/([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)/g, function(match, key, value) {
+            value = value.replace(/^"(.+)"$/, "$1");
+            switch (key) {
             case "realm":
-                realm = matches[2];
+                realm = value;
                 break;
             case "nonce":
-                nonce = matches[2];
+                nonce = value;
                 break;
             case "qop":
-                qop = matches[2];
+                qop   = value;
                 break;
             case "host":
-                host = matches[2];
+                host  = value;
                 break;
             }
-        }
+        });
 
         var digest_uri = "xmpp/" + this.domain;
-        if (host !== null) {
+        if (goog.isDefAndNotNull(host)) {
             digest_uri = digest_uri + "/" + host;
         }
 
-        var A1 = MD5.hash(Strophe.getNodeFromJid(this.jid) +
-                          ":" + realm + ":" + this.pass) +
-            ":" + nonce + ":" + cnonce;
+        var A1 = Strophe.hash(Strophe.getNodeFromJid(this.jid) +
+                              ":" + realm + ":" + this.pass) +
+                 ":" + nonce + ":" + cnonce;
         var A2 = 'AUTHENTICATE:' + digest_uri;
 
         var responseText = "";
@@ -2707,10 +2739,10 @@ if (Strophe.ENABLE_DIGEST_MD5) {
         responseText += 'qop="auth",';
         responseText += 'digest-uri=' + goog.string.quote(digest_uri) + ',';
         responseText += 'response=' + goog.string.quote(
-            MD5.hexdigest(MD5.hexdigest(A1) + ":" +
-                          nonce + ":00000001:" +
-                          cnonce + ":auth:" +
-                          MD5.hexdigest(A2))) + ',';
+            Strophe.hexdigest(Strophe.hexdigest(A1) + ":" +
+                              nonce + ":00000001:" +
+                              cnonce + ":auth:" +
+                              Strophe.hexdigest(A2))) + ',';
         responseText += 'charset="utf-8"';
 
         this._sasl_challenge_handler = this._addSysHandler(
@@ -2756,6 +2788,27 @@ if (Strophe.ENABLE_DIGEST_MD5) {
 
 if (Strophe.ENABLE_SCRAM_SHA_1) {
     /**
+     * @param {Array.<number>} x
+     * @return {Array.<number>}
+     */
+    Strophe.sha1 = function (x) {
+        var sha1 = new goog.crypt.Sha1();
+        sha1.update(x);
+        return sha1.digest();
+    };
+
+    /**
+     * @param {Array.<number>} key
+     * @param {Array.<number>} data
+     * @return {Array.<number>}
+     */
+    Strophe.hmac_sha1 = function (key, data) {
+        var sha1 = new goog.crypt.Sha1(),
+            hmac = new goog.crypt.Hmac(sha1, key);
+        return hmac.getHmac(data);
+    };
+
+    /**
      *  _Private_ handler for SCRAM-SHA-1 SASL authentication.
      *
      * @param {Element} elem - The challenge stanza.
@@ -2764,65 +2817,61 @@ if (Strophe.ENABLE_SCRAM_SHA_1) {
      *    false to remove the handler.
      */
     Strophe.Connection.prototype._sasl_scram_challenge_cb = function (elem) {
-        var nonce, salt = '', iter, Hi, U, U_old;
-        var clientKey, serverKey, clientSignature;
-        var responseText = "c=biws,";
         var challenge = goog.crypt.base64.decodeString(Strophe.getText(elem));
-        var authMessage = this._sasl_data["client-first-message-bare"] + "," +
-            challenge + ",";
-        var cnonce = this._sasl_data["cnonce"]
-        var attribMatch = /([a-z]+)=([^,]+)(,|$)/;
 
         // remove unneeded handlers
         this.deleteHandler(this._sasl_failure_handler);
 
-        while (challenge.match(attribMatch)) {
-            var matches = challenge.match(attribMatch);
-            challenge = challenge.replace(matches[0], "");
-            switch (matches[1]) {
-            case "r":
-                nonce = matches[2];
+        var nonce, salt, iter;
+        challenge.replace(/([a-z]+)=([^,]+)(,|$)/g, function(match, key, value) {
+            switch (key) {
+            case 'r':
+                nonce = value;
                 break;
-            case "s":
-                salt = matches[2];
+            case 's':
+                salt  = goog.array.concat(goog.crypt.base64.decodeStringToByteArray(value), 0, 0, 0, 1);
                 break;
-            case "i":
-                iter = matches[2];
+            case 'i':
+                iter  = value;
                 break;
             }
-        }
+        });
 
-        if (!(nonce.substr(0, cnonce.length) === cnonce)) {
+        if (! goog.string.startsWith(nonce, this._sasl_data['cnonce'])) {
             this._sasl_data = [];
             return this._sasl_failure_cb(null);
         }
 
-        responseText += "r=" + nonce;
-        authMessage += responseText;
+        var responseText = 'c=biws,r=' + nonce,
+            authMessage  = goog.crypt.stringToByteArray(
+                this._sasl_data['client-first-message-bare'] + ',' + challenge + ',' + responseText);
 
-        salt = goog.crypt.base64.decodeString(salt);
-        salt += "\0\0\0\1";
+        var password = goog.crypt.stringToByteArray(this.pass),
+            U_old    = Strophe.hmac_sha1(password, salt),
+            saltedPassword = U_old;
 
-        Hi = U_old = SHA1.core_hmac_sha1(this.pass, salt);
         for (var i = 1; i < iter; i++) {
-            U = SHA1.core_hmac_sha1(this.pass, SHA1.binb2str(U_old));
-            for (var k = 0; k < 5; k++) {
-                Hi[k] ^= U[k];
+            var U = Strophe.hmac_sha1(password, U_old);
+            for (var k = 0; k < 20; ++k) {
+                saltedPassword[k] ^= U[k];
             }
             U_old = U;
         }
-        Hi = SHA1.binb2str(Hi);
 
-        clientKey = SHA1.core_hmac_sha1(Hi, "Client Key");
-        serverKey = SHA1.str_hmac_sha1(Hi, "Server Key");
-        clientSignature = SHA1.core_hmac_sha1(SHA1.str_sha1(SHA1.binb2str(clientKey)), authMessage);
-        this._sasl_data["server-signature"] = SHA1.b64_hmac_sha1(serverKey, authMessage);
+        var clientKey       = Strophe.hmac_sha1(saltedPassword, goog.crypt.stringToByteArray('Client Key')),
+            storedKey       = Strophe.sha1(clientKey),
+            clientSignature = Strophe.hmac_sha1(storedKey, authMessage),
+            clientProof     = clientKey,
+            serverKey       = Strophe.hmac_sha1(saltedPassword, goog.crypt.stringToByteArray('Server Key')),
+            serverSignature = Strophe.hmac_sha1(serverKey, authMessage);
 
-        for (var k = 0; k < 5; k++) {
-            clientKey[k] ^= clientSignature[k];
+        this._sasl_data["server-signature"] = goog.crypt.base64.encodeByteArray(serverSignature);
+
+        for (var k = 0; k < 20; ++k) {
+            clientProof[k] ^= clientSignature[k];
         }
 
-        responseText += ",p=" + goog.crypt.base64.encodeString(SHA1.binb2str(clientKey));
+        responseText += ",p=" + goog.crypt.base64.encodeByteArray(clientProof);
 
         this._sasl_success_handler = this._addSysHandler(
             goog.bind(this._sasl_success_cb, this), null,
