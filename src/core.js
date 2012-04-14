@@ -1350,7 +1350,7 @@ Strophe.Connection = function (service)
 Strophe.Connection.prototype.service;
 
 /** @type {?string} */
-Strophe.Connection.prototype.jid = '';
+Strophe.Connection.prototype['jid'] = '';
 
 /** @type {?string} */
 Strophe.Connection.prototype.domain = null;
@@ -1409,13 +1409,13 @@ Strophe.Connection.prototype.authenticated = false;
 Strophe.Connection.prototype.disconnecting = false;
 
 /** @type {boolean} */
-Strophe.Connection.prototype.connected = false;
+Strophe.Connection.prototype['connected'] = false;
 
 /** @type {number} */
 Strophe.Connection.prototype.errors = 0;
 
 /** @type {boolean} */
-Strophe.Connection.prototype.paused = false;
+Strophe.Connection.prototype['paused'] = false;
 
 /** @type {number} */
 Strophe.Connection.prototype.hold = 1;
@@ -1473,7 +1473,7 @@ Strophe.Connection.prototype.reset = function () {
 
     this.authenticated = false;
     this.disconnecting = false;
-    this.connected = false;
+    this['connected'] = false;
 
     this.errors = 0;
 
@@ -1490,7 +1490,7 @@ Strophe.Connection.prototype.reset = function () {
  *  send the data in a single request, saving many request trips.
  */
 Strophe.Connection.prototype.pause = function () {
-    this.paused = true;
+    this['paused'] = true;
 };
 
 /**
@@ -1499,7 +1499,7 @@ Strophe.Connection.prototype.pause = function () {
  *  This resumes after pause() has been called.
  */
 Strophe.Connection.prototype.resume = function () {
-    this.paused = false;
+    this['paused'] = false;
 };
 
 /**
@@ -1560,11 +1560,11 @@ Strophe.Connection.prototype.getUniqueId = function (suffix) {
  * @param {string=} route
  */
 Strophe.Connection.prototype.connect = function (jid, pass, callback, wait, hold, route) {
-    this.jid = jid;
+    this['jid'] = jid;
     this.pass = pass;
     this.connect_callback = callback;
     this.disconnecting = false;
-    this.connected = false;
+    this['connected'] = false;
     this.authenticated = false;
     this.errors = 0;
 
@@ -1572,7 +1572,7 @@ Strophe.Connection.prototype.connect = function (jid, pass, callback, wait, hold
     this.hold = hold || this.hold;
 
     // parse jid for domain and resource
-    this.domain = this.domain || Strophe.getDomainFromJid(this.jid);
+    this.domain = this.domain || Strophe.getDomainFromJid(this['jid']);
 
     // build the body tag
     var body = this._buildBody().attrs({
@@ -1626,15 +1626,15 @@ Strophe.Connection.prototype.connect = function (jid, pass, callback, wait, hold
  *      allowed range of request ids that are valid.  The default is 5.
  */
 Strophe.Connection.prototype.attach = function (jid, sid, rid, callback, wait, hold, wind) {
-    this.jid = jid;
+    this['jid'] = jid;
     this.sid = sid;
     this.rid = rid;
     this.connect_callback = callback;
 
-    this.domain = Strophe.getDomainFromJid(this.jid);
+    this.domain = Strophe.getDomainFromJid(this['jid']);
 
     this.authenticated = true;
-    this.connected = true;
+    this['connected'] = true;
 
     this.wait = wait || this.wait;
     this.hold = hold || this.hold;
@@ -1959,7 +1959,7 @@ Strophe.Connection.prototype.disconnect = function (reason) {
     this._changeConnectStatus(Strophe.Status.DISCONNECTING, reason || null);
 
     Strophe.info("Disconnect was called because: " + reason);
-    if (this.connected) {
+    if (this['connected']) {
         // setup timeout handler
         this._disconnectTimeout = this._addSysTimedHandler(
             3000, goog.bind(this._onDisconnectTimeout, this));
@@ -2116,7 +2116,7 @@ Strophe.Connection.prototype._processRequest = function (i) {
                     req.xhr.send(self.service, 'POST', req.data, { 'Content-Type': 'text/xml; charset=UTF-8' });
                 } catch (e2) {
                     Strophe.error("XHR send failed.");
-                    if (!self.connected) {
+                    if (!self['connected']) {
                         self._changeConnectStatus(Strophe.Status.CONNFAIL, "bad-service");
                     }
                     self.disconnect();
@@ -2293,9 +2293,9 @@ Strophe.Connection.prototype._doDisconnect = function () {
     this.rid = Math.floor(Math.random() * 4294967295);
 
     // tell the parent we disconnected
-    if (this.connected) {
+    if (this['connected']) {
         this._changeConnectStatus(Strophe.Status.DISCONNECTED, null);
-        this.connected = false;
+        this['connected'] = false;
     }
 
     // delete handlers
@@ -2447,7 +2447,7 @@ Strophe.Connection.prototype._sendTerminate = function () {
 Strophe.Connection.prototype._connect_cb = function (req) {
     Strophe.info("_connect_cb was called");
 
-    this.connected = true;
+    this['connected'] = true;
     var bodyWrap = req.getResponse();
     if (!bodyWrap) { return; }
 
@@ -2592,7 +2592,7 @@ if (Strophe.ENABLE_DIGEST_MD5 || Strophe.ENABLE_SCRAM_SHA_1) {
  *
  */
 Strophe.Connection.prototype.authenticate = function () {
-    if (Strophe.getNodeFromJid(this.jid) === null &&
+    if (Strophe.getNodeFromJid(this['jid']) === null &&
         this._authentication.sasl_anonymous) {
         this._changeConnectStatus(Strophe.Status.AUTHENTICATING, null);
         this._sasl_success_handler = this._addSysHandler(
@@ -2606,7 +2606,7 @@ Strophe.Connection.prototype.authenticate = function () {
             'xmlns': Strophe.NS.SASL,
             'mechanism': "ANONYMOUS"
         }).tree());
-    } else if (Strophe.getNodeFromJid(this.jid) === null) {
+    } else if (Strophe.getNodeFromJid(this['jid']) === null) {
         // we don't have a node, which is required for non-anonymous
         // client connections
         this._changeConnectStatus(Strophe.Status.CONNFAIL, 'x-strophe-bad-non-anon-jid');
@@ -2614,7 +2614,7 @@ Strophe.Connection.prototype.authenticate = function () {
     } else if (Strophe.ENABLE_SCRAM_SHA_1 && this._authentication.sasl_scram_sha1) {
         var cnonce = Strophe.hexdigest('' + Math.random() * 1234567890);
 
-        var auth_str = "n=" + Strophe.getNodeFromJid(this.jid);
+        var auth_str = "n=" + Strophe.getNodeFromJid(this['jid']);
         auth_str += ",r=";
         auth_str += cnonce;
 
@@ -2651,9 +2651,9 @@ Strophe.Connection.prototype.authenticate = function () {
     } else if (Strophe.ENABLE_PLAIN && this._authentication.sasl_plain) {
         // Build the plain auth string (barejid null
         // username null password) and base 64 encoded.
-        auth_str = Strophe.getBareJidFromJid(this.jid);
+        auth_str = Strophe.getBareJidFromJid(this['jid']);
         auth_str = auth_str + "\u0000";
-        auth_str = auth_str + Strophe.getNodeFromJid(this.jid);
+        auth_str = auth_str + Strophe.getNodeFromJid(this['jid']);
         auth_str = auth_str + "\u0000";
         auth_str = auth_str + this.pass;
 
@@ -2681,7 +2681,7 @@ Strophe.Connection.prototype.authenticate = function () {
             'id': "_auth_1"
         }).c("query", {
             'xmlns': Strophe.NS.AUTH
-        }).c("username", {}).t(Strophe.getNodeFromJid(this.jid) || '').tree());
+        }).c("username", {}).t(Strophe.getNodeFromJid(this['jid']) || '').tree());
     }
 };
 
@@ -2725,14 +2725,14 @@ if (Strophe.ENABLE_DIGEST_MD5) {
             digest_uri = digest_uri + "/" + host;
         }
 
-        var A1 = Strophe.hash(Strophe.getNodeFromJid(this.jid) +
+        var A1 = Strophe.hash(Strophe.getNodeFromJid(this['jid']) +
                               ":" + realm + ":" + this.pass) +
                  ":" + nonce + ":" + cnonce;
         var A2 = 'AUTHENTICATE:' + digest_uri;
 
         var responseText = new goog.string.StringBuffer();
         responseText.append(
-                'username=', goog.string.quote(Strophe.getNodeFromJid(this.jid) || ''), ',');
+                'username=', goog.string.quote(Strophe.getNodeFromJid(this['jid']) || ''), ',');
         responseText.append('realm=', goog.string.quote(realm), ',');
         responseText.append('nonce=', goog.string.quote(nonce), ',');
         responseText.append('cnonce=', goog.string.quote(cnonce), ',');
@@ -2907,17 +2907,17 @@ if (Strophe.ENABLE_LEGACY_AUTH) {
         // build plaintext auth iq
         var iq = $iq({'type': "set", 'id': "_auth_2"})
             .c('query', {'xmlns': Strophe.NS.AUTH})
-            .c('username', {}).t(Strophe.getNodeFromJid(this.jid) || '')
+            .c('username', {}).t(Strophe.getNodeFromJid(this['jid']) || '')
             .up()
             .c('password').t(this.pass);
 
-        if (!Strophe.getResourceFromJid(this.jid)) {
+        if (!Strophe.getResourceFromJid(this['jid'])) {
             // since the user has not supplied a resource, we pick
             // a default one here.  unlike other auth methods, the server
             // cannot do this for us.
-            this.jid = Strophe.getBareJidFromJid(this.jid) + '/strophe';
+            this['jid'] = Strophe.getBareJidFromJid(this['jid']) + '/strophe';
         }
-        iq.up().c('resource', {}).t(Strophe.getResourceFromJid(this.jid) || '');
+        iq.up().c('resource', {}).t(Strophe.getResourceFromJid(this['jid']) || '');
 
         this._addSysHandler(goog.bind(this._auth2_cb, this), null,
                             null, null, "_auth_2");
@@ -3010,7 +3010,7 @@ Strophe.Connection.prototype._sasl_auth1_cb = function (elem) {
         this._addSysHandler(goog.bind(this._sasl_bind_cb, this), null, null,
                             null, "_bind_auth_2");
 
-        var resource = Strophe.getResourceFromJid(this.jid);
+        var resource = Strophe.getResourceFromJid(this['jid']);
         if (resource) {
             this.send($iq({'type': "set", 'id': "_bind_auth_2"})
                       .c('bind', {'xmlns': Strophe.NS.BIND})
@@ -3049,9 +3049,9 @@ Strophe.Connection.prototype._sasl_bind_cb = function (elem) {
     var jidNode;
     if (bind.length > 0) {
         // Grab jid
-        jidNode = bind[0].getElementsByTagName("jid");
+        jidNode = bind[0].getElementsByTagName('jid');
         if (jidNode.length > 0) {
-            this.jid = Strophe.getText(jidNode[0]);
+            this['jid'] = Strophe.getText(jidNode[0]);
 
             if (this.do_session) {
                 this._addSysHandler(goog.bind(this._sasl_session_cb, this),
@@ -3262,7 +3262,7 @@ Strophe.Connection.prototype._onIdle = function () {
     }
 
     if (this._requests.length < 2 && this._data.length > 0 &&
-        !this.paused) {
+        !this['paused']) {
         body = this._buildBody();
         for (i = 0; i < this._data.length; i++) {
             if (this._data[i] !== null) {
@@ -3308,7 +3308,7 @@ Strophe.Connection.prototype._onIdle = function () {
     clearTimeout(this._idleTimeout);
 
     // reactivate the timer only if connected
-    if (this.connected) {
+    if (this['connected']) {
         this._idleTimeout = setTimeout(goog.bind(this._onIdle, this), 100);
     }
 };
