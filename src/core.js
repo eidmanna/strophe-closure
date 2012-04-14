@@ -32,6 +32,7 @@ goog.require('goog.dom.xml');
 goog.require('goog.net.XhrIo');
 goog.require('goog.net.XmlHttp');
 goog.require('goog.string');
+goog.require('goog.string.StringBuffer');
 
 /** @define {boolean} */
 Strophe.ENABLE_DIGEST_MD5  = true;
@@ -2729,21 +2730,21 @@ if (Strophe.ENABLE_DIGEST_MD5) {
                  ":" + nonce + ":" + cnonce;
         var A2 = 'AUTHENTICATE:' + digest_uri;
 
-        var responseText = "";
-        responseText += 'username=' +
-            goog.string.quote(Strophe.getNodeFromJid(this.jid) || '') + ',';
-        responseText += 'realm=' + goog.string.quote(realm) + ',';
-        responseText += 'nonce=' + goog.string.quote(nonce) + ',';
-        responseText += 'cnonce=' + goog.string.quote(cnonce) + ',';
-        responseText += 'nc="00000001",';
-        responseText += 'qop="auth",';
-        responseText += 'digest-uri=' + goog.string.quote(digest_uri) + ',';
-        responseText += 'response=' + goog.string.quote(
+        var responseText = new goog.string.StringBuffer();
+        responseText.append(
+                'username=', goog.string.quote(Strophe.getNodeFromJid(this.jid) || ''), ',');
+        responseText.append('realm=', goog.string.quote(realm), ',');
+        responseText.append('nonce=', goog.string.quote(nonce), ',');
+        responseText.append('cnonce=', goog.string.quote(cnonce), ',');
+        responseText.append('nc="00000001",');
+        responseText.append('qop="auth",');
+        responseText.append('digest-uri=', goog.string.quote(digest_uri), ',');
+        responseText.append('response=', goog.string.quote(
             Strophe.hexdigest(Strophe.hexdigest(A1) + ":" +
                               nonce + ":00000001:" +
                               cnonce + ":auth:" +
-                              Strophe.hexdigest(A2))) + ',';
-        responseText += 'charset="utf-8"';
+                              Strophe.hexdigest(A2))), ',');
+        responseText.append('charset="utf-8"');
 
         this._sasl_challenge_handler = this._addSysHandler(
             goog.bind(this._sasl_digest_challenge2_cb, this), null,
@@ -2757,7 +2758,7 @@ if (Strophe.ENABLE_DIGEST_MD5) {
 
         this.send($build('response', {
             'xmlns': Strophe.NS.SASL
-        }).t(goog.crypt.base64.encodeString(responseText)).tree());
+        }).t(goog.crypt.base64.encodeString(responseText.toString())).tree());
 
         return false;
     };
