@@ -18,8 +18,21 @@ goog.exportProperty(Strophe, 'LogLevel', Strophe.LogLevel);
 goog.exportProperty(Strophe.LogLevel, 'WARN', goog.debug.Logger.Level.WARNING);
 
 goog.exportProperty(Strophe, 'NS', Strophe.NS);
-goog.exportProperty(Strophe.NS, 'DISCO_INFO', Strophe.NS.DISCO_INFO);
+goog.exportProperty(Strophe.NS, 'HTTPBIND', Strophe.NS.HTTPBIND);
+goog.exportProperty(Strophe.NS, 'BOSH', Strophe.NS.BOSH);
+goog.exportProperty(Strophe.NS, 'CLIENT', Strophe.NS.CLIENT);
+goog.exportProperty(Strophe.NS, 'AUTH', Strophe.NS.AUTH);
 goog.exportProperty(Strophe.NS, 'ROSTER', Strophe.NS.ROSTER);
+goog.exportProperty(Strophe.NS, 'PROFILE', Strophe.NS.PROFILE);
+goog.exportProperty(Strophe.NS, 'DISCO_INFO', Strophe.NS.DISCO_INFO);
+goog.exportProperty(Strophe.NS, 'DISCO_ITEMS', Strophe.NS.DISCO_ITEMS);
+goog.exportProperty(Strophe.NS, 'MUC', Strophe.NS.MUC);
+goog.exportProperty(Strophe.NS, 'SASL', Strophe.NS.SASL);
+goog.exportProperty(Strophe.NS, 'STREAM', Strophe.NS.STREAM);
+goog.exportProperty(Strophe.NS, 'BIND', Strophe.NS.BIND);
+goog.exportProperty(Strophe.NS, 'SESSION', Strophe.NS.SESSION);
+goog.exportProperty(Strophe.NS, 'XHTML_IM', Strophe.NS.XHTML_IM);
+goog.exportProperty(Strophe.NS, 'XHTML', Strophe.NS.XHTML);
 
 goog.exportProperty(Strophe, 'Status', Strophe.Status);
 goog.exportProperty(Strophe.Status, 'ERROR', Strophe.Status.ERROR);
