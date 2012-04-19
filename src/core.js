@@ -19,6 +19,7 @@ goog.provide('Strophe');
 goog.provide('Strophe.Builder');
 goog.provide('Strophe.Connection');
 goog.provide('Strophe.XHTML');
+goog.provide('Strophe.XmlHttpFactory');
 
 goog.require('goog.array');
 goog.require('goog.crypt');
@@ -31,6 +32,7 @@ goog.require('goog.dom');
 goog.require('goog.dom.xml');
 goog.require('goog.net.XhrIo');
 goog.require('goog.net.XmlHttp');
+goog.require('goog.net.XmlHttpFactory');
 goog.require('goog.string');
 goog.require('goog.string.StringBuffer');
 
@@ -1167,8 +1169,32 @@ Strophe.TimedHandler.prototype.reset = function () {
  * @return {string}
  *    The string representation.
  */
-Strophe.TimedHandler.prototype.toString = function () {
+Strophe.TimedHandler.prototype.toString = function() {
     return "{TimedHandler: " + this.handler + "(" + this.period +")}";
+};
+
+/**
+ * @constructor
+ * @extends {goog.net.XmlHttpFactory}
+ */
+Strophe.XmlHttpFactory = function() {
+    goog.base(this);
+};
+goog.inherits(Strophe.XmlHttpFactory, goog.net.XmlHttpFactory);
+goog.addSingletonGetter(Strophe.XmlHttpFactory);
+
+/** @override */
+Strophe.XmlHttpFactory.prototype.createInstance = function() {
+    if (window.XMLHttpRequest) {
+        var xhr = new XMLHttpRequest();
+        if (xhr['overrideMimeType']) {
+            xhr['overrideMimeType']('text/xml');
+        }
+        return xhr;
+    }
+    if (window.ActiveXObject) {
+        return new ActiveXObject('Microsoft.XMLHTTP');
+    }
 };
 
 /**
@@ -1179,7 +1205,7 @@ Strophe.TimedHandler.prototype.toString = function () {
  * @param {number} rid - The BOSH rid attribute associated with this request.
  * @param {number=} sends - The number of times this same request has been sent.
  */
-Strophe.Request = function (elem, func, rid, sends) {
+Strophe.Request = function(elem, func, rid, sends) {
     this.id = ++Strophe._requestId;
     this.xmlData = elem;
     this.data = Strophe.serialize(elem);
@@ -1274,7 +1300,7 @@ Strophe.Request.prototype.getResponse = function () {
  * @return {goog.net.XhrIo} a new XMLHttpRequest.
  */
 Strophe.Request.prototype._newXHR = function () {
-    var xhr = new goog.net.XhrIo();
+    var xhr = new goog.net.XhrIo(Strophe.XmlHttpFactory.getInstance());
     goog.events.listen(xhr, goog.net.EventType.COMPLETE, goog.partial(this.func, this));
     return xhr;
 };
@@ -2060,20 +2086,6 @@ Strophe.Connection.prototype._restartRequest = function (i) {
  */
 Strophe.Connection.prototype._processRequest = function (i) {
     var req = this._requests[i];
-    var reqStatus = -1;
-
-    try {
-        if (req.xhr.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE) {
-            reqStatus = req.xhr.getStatus();
-        }
-    } catch (e) {
-        Strophe.error("caught an error in _requests[" + i +
-                      "], reqStatus: " + reqStatus);
-    }
-
-    if (! goog.isDefAndNotNull(reqStatus)) {
-        reqStatus = -1;
-    }
 
     // make sure we limit the number of retries
     if (req.sends > this.maxRetries) {
@@ -2086,15 +2098,9 @@ Strophe.Connection.prototype._processRequest = function (i) {
                           time_elapsed > Math.floor(Strophe.TIMEOUT * this.wait));
     var secondaryTimeout = (req.dead !== null &&
                             req.timeDead() > Math.floor(Strophe.SECONDARY_TIMEOUT * this.wait));
-    var requestCompletedWithServerError = (req.xhr.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE &&
-                                           (reqStatus < 1 ||
-                                            reqStatus >= 500));
-    if (primaryTimeout || secondaryTimeout ||
-        requestCompletedWithServerError) {
+    if (primaryTimeout || secondaryTimeout) {
         if (secondaryTimeout) {
-            Strophe.error("Request " +
-                          this._requests[i].id +
-                          " timed out (secondary), restarting");
+            Strophe.error("Request " + this._requests[i].id + " timed out (secondary), restarting");
         }
         req.abort = true;
         req.xhr.dispose();
@@ -2146,10 +2152,7 @@ Strophe.Connection.prototype._processRequest = function (i) {
         }
     } else {
         if (goog.DEBUG) {
-            Strophe.debug("_processRequest: " +
-                          (i === 0 ? "first" : "second") +
-                          " request has readyState of " +
-                          req.xhr.getReadyState());
+            Strophe.debug("_processRequest: " + (i === 0 ? "first" : "second") + " request has readyState of " + req.xhr.getReadyState());
         }
     }
 };
@@ -2164,11 +2167,9 @@ Strophe.Connection.prototype._processRequest = function (i) {
 Strophe.Connection.prototype._throttledRequestHandler = function () {
     if (goog.DEBUG) {
         if (!this._requests) {
-            Strophe.debug("_throttledRequestHandler called with " +
-                          "undefined requests");
+            Strophe.debug("_throttledRequestHandler called with " + "undefined requests");
         } else {
-            Strophe.debug("_throttledRequestHandler called with " +
-                          this._requests.length + " requests");
+            Strophe.debug("_throttledRequestHandler called with " + this._requests.length + " requests");
         }
     }
 
@@ -2257,8 +2258,6 @@ Strophe.Connection.prototype._onRequestStateChange = function (func, req) {
     if (!((reqStatus > 0 && reqStatus < 500) || req.sends > 5)) {
         this._throttledRequestHandler();
     }
-
-    //req.xhr.dispose();
 };
 
 /**
