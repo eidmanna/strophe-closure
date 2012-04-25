@@ -157,7 +157,7 @@ Strophe.XHTML.attributes = {
 };
 
 /** @type {Array.<string>} */
-Strophe.XHTML.css = ['background-color', 'color', 'float', 'font-family', 'font-size', 'font-style', 'font-weight', 'margin-left', 'margin-right', 'text-align', 'text-decoration'];
+Strophe.XHTML.css = ['background-color', 'color', 'font-family', 'font-size', 'font-style', 'font-weight', 'margin-left', 'margin-right', 'text-align', 'text-decoration'];
 
 /**
  * @param {string} tag
