@@ -1185,16 +1185,17 @@ goog.addSingletonGetter(Strophe.XmlHttpFactory);
 
 /** @override */
 Strophe.XmlHttpFactory.prototype.createInstance = function() {
-    if (window.XMLHttpRequest) {
+    if (typeof XMLHttpRequest !== 'undefined') {
         var xhr = new XMLHttpRequest();
         if (xhr['overrideMimeType']) {
             xhr['overrideMimeType']('text/xml');
         }
         return xhr;
     }
-    if (window.ActiveXObject) {
+    if (typeof ActiveXObject !== 'undefined') {
         return new ActiveXObject('Microsoft.XMLHTTP');
     }
+    return null;
 };
 
 /**
