@@ -453,15 +453,16 @@ Strophe.copyElement = function (elem) {
  *  the new copy.
  *
  * @param {Node} elem - A DOM element.
+ * @param {boolean?} clean - true to allow only valid XHTML
  *
  * @return {Node}
  *    A new, copied DOM element tree.
  */
-Strophe.createHtml = function (elem) {
+Strophe.createHtml = function (elem, clean) {
     var i, el = null, j, tag, attribute, value, css, cssAttrs, attr, cssName, cssValue, children, child;
     if (elem.nodeType == goog.dom.NodeType.ELEMENT) {
         tag = elem.nodeName.toLowerCase();
-        if(Strophe.XHTML.validTag(tag)) {
+        if (clean && Strophe.XHTML.validTag(tag)) {
             try {
                 el = Strophe.xmlElement(tag);
                 for(i = 0; i < Strophe.XHTML.attributes[tag].length; i++) {
@@ -498,7 +499,7 @@ Strophe.createHtml = function (elem) {
                 }
 
                 for (i = 0; i < elem.childNodes.length; i++) {
-                    el.appendChild(Strophe.createHtml(elem.childNodes[i]));
+                    el.appendChild(Strophe.createHtml(elem.childNodes[i], clean));
                 }
             } catch(e) { // invalid elements
               el = Strophe.xmlTextNode('');
@@ -506,13 +507,13 @@ Strophe.createHtml = function (elem) {
         } else {
             el = Strophe.xmlGenerator().createDocumentFragment();
             for (i = 0; i < elem.childNodes.length; i++) {
-                el.appendChild(Strophe.createHtml(elem.childNodes[i]));
+                el.appendChild(Strophe.createHtml(elem.childNodes[i], clean));
             }
         }
     } else if (elem.nodeType == goog.dom.NodeType.DOCUMENT_FRAGMENT) {
         el = Strophe.xmlGenerator().createDocumentFragment();
         for (i = 0; i < elem.childNodes.length; i++) {
-            el.appendChild(Strophe.createHtml(elem.childNodes[i]));
+            el.appendChild(Strophe.createHtml(elem.childNodes[i], clean));
         }
     } else if (elem.nodeType == goog.dom.NodeType.TEXT) {
         el = Strophe.xmlTextNode(elem.nodeValue);
@@ -970,17 +971,18 @@ Strophe.Builder.prototype.t = function (text) {
  *  This *does not* make the child the new current element
  *
  * @param {string} html - The html to insert as contents of current element.
+ * @param {boolean?} clean - true to allow only valid XHTML
  *
  * @return {!Strophe.Builder}
  */
-Strophe.Builder.prototype.h = function (html) {
+Strophe.Builder.prototype.h = function (html, clean) {
     var fragment = document.createElement('body');
 
     // force the browser to try and fix any invalid HTML tags
     fragment.innerHTML = html;
 
     // copy cleaned html into an xml dom
-    var xhtml = Strophe.createHtml(fragment);
+    var xhtml = Strophe.createHtml(fragment, clean);
 
     while(xhtml.childNodes.length > 0) {
         this.node.appendChild(xhtml.childNodes[0]);
