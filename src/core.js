@@ -982,11 +982,14 @@ Strophe.Builder.prototype.h = function (html, clean) {
     fragment.innerHTML = html;
 
     // copy cleaned html into an xml dom
-    var xhtml = Strophe.createHtml(fragment, clean);
-
-    while(xhtml.childNodes.length > 0) {
-        this.node.appendChild(xhtml.childNodes[0]);
+    if (clean) {
+        fragment = Strophe.createHtml(fragment, clean);
+    } 
+   
+    for (var i = 0; i < fragment.childNodes.length; ++i) {
+        this.node.appendChild(fragment.childNodes[i]);
     }
+    
     return this;
 };
 
