@@ -462,39 +462,52 @@ Strophe.createHtml = function (elem, clean) {
     var i, el = null, j, tag, attribute, value, css, cssAttrs, attr, cssName, cssValue, children, child;
     if (elem.nodeType == goog.dom.NodeType.ELEMENT) {
         tag = elem.nodeName.toLowerCase();
-        if (clean && Strophe.XHTML.validTag(tag)) {
+        if (! clean || Strophe.XHTML.validTag(tag)) {
             try {
                 el = Strophe.xmlElement(tag);
-                for(i = 0; i < Strophe.XHTML.attributes[tag].length; i++) {
-                    attribute = Strophe.XHTML.attributes[tag][i];
-                    value = elem.getAttribute(attribute);
-                    //if(typeof value == 'undefined' || value === null || value === '' || value === false || value === 0) {
-                    if (! goog.isDefAndNotNull(value)) {
-                        continue;
-                    }
-                    if (attribute == 'style' && goog.isObject(value)) {
-                        if (goog.isDefAndNotNull(value.cssText)) {
-                            value = value.cssText; // we're dealing with IE, need to get CSS out
+                if (clean) {
+                    for(i = 0; i < Strophe.XHTML.attributes[tag].length; i++) {
+                        attribute = Strophe.XHTML.attributes[tag][i];
+                        value = elem.getAttribute(attribute);
+                        //if(typeof value == 'undefined' || value === null || value === '' || value === false || value === 0) {
+                        if (! goog.isDefAndNotNull(value)) {
+                            continue;
                         }
-                    }
-                    // filter out invalid css styles
-                    if(attribute == 'style') {
-                        css = [];
-                        cssAttrs = value.split(';');
-                        for(j = 0; j < cssAttrs.length; j++) {
-                            attr = cssAttrs[j].split(':');
-                            cssName = attr[0].replace(/^\s*/, "").replace(/\s*$/, "").toLowerCase();
-                            if(Strophe.XHTML.validCSS(cssName)) {
-                                cssValue = attr[1].replace(/^\s*/, "").replace(/\s*$/, "");
-                                css.push(cssName + ': ' + cssValue);
+                        if (attribute == 'style' && goog.isObject(value)) {
+                            if (goog.isDefAndNotNull(value.cssText)) {
+                                value = value.cssText; // we're dealing with IE, need to get CSS out
                             }
                         }
-                        if(css.length > 0) {
-                            value = css.join('; ');
+                        // filter out invalid css styles
+                        if(attribute == 'style') {
+                            css = [];
+                            cssAttrs = value.split(';');
+                            for(j = 0; j < cssAttrs.length; j++) {
+                                attr = cssAttrs[j].split(':');
+                                cssName = attr[0].replace(/^\s*/, "").replace(/\s*$/, "").toLowerCase();
+                                if(Strophe.XHTML.validCSS(cssName)) {
+                                    cssValue = attr[1].replace(/^\s*/, "").replace(/\s*$/, "");
+                                    css.push(cssName + ': ' + cssValue);
+                                }
+                            }
+                            if(css.length > 0) {
+                                value = css.join('; ');
+                                el.setAttribute(attribute, value);
+                            }
+                        } else {
                             el.setAttribute(attribute, value);
                         }
-                    } else {
-                        el.setAttribute(attribute, value);
+                    }
+                } else {
+                    for (i = 0; i < elem.attributes.length; ++i) {
+                        attribute = elem.attributes[i];
+                        value = attribute.value;
+                        if (attribute.name == 'style' && goog.isObject(value)) {
+                            if (goog.isDefAndNotNull(value.cssText)) {
+                                value = value.cssText; // we're dealing with IE, need to get CSS out
+                            }
+                        }
+                        el.setAttribute(attribute.name, value);
                     }
                 }
 
@@ -982,9 +995,7 @@ Strophe.Builder.prototype.h = function (html, clean) {
     fragment.innerHTML = html;
 
     // copy cleaned html into an xml dom
-    if (clean) {
-        fragment = Strophe.createHtml(fragment, clean);
-    } 
+    fragment = Strophe.createHtml(fragment, clean);
    
     for (var i = 0; i < fragment.childNodes.length; ++i) {
         this.node.appendChild(fragment.childNodes[i]);

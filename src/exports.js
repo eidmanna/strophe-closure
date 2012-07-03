@@ -12,6 +12,7 @@ goog.exportProperty(Strophe, 'getNodeFromJid', Strophe.getNodeFromJid);
 goog.exportProperty(Strophe, 'getDomainFromJid', Strophe.getDomainFromJid);
 goog.exportProperty(Strophe, 'getResourceFromJid', Strophe.getResourceFromJid);
 goog.exportProperty(Strophe, 'getBareJidFromJid', Strophe.getBareJidFromJid);
+goog.exportProperty(Strophe, 'isTagEqual', Strophe.isTagEqual);
 
 goog.provide('Strophe.LogLevel');
 goog.exportProperty(Strophe, 'LogLevel', Strophe.LogLevel);
